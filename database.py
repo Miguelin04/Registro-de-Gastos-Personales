@@ -1,9 +1,10 @@
 """
 database.py - Capa de acceso a datos para el Registro de Gastos Personales
-Maneja la conexión a MariaDB y todas las operaciones CRUD.
+Maneja la conexión a MariaDB/TiDB y todas las operaciones CRUD.
 """
 
 import os
+import ssl
 import mysql.connector
 from mysql.connector import Error
 from datetime import date, datetime
@@ -11,21 +12,30 @@ from decimal import Decimal
 
 
 class Database:
-    """Gestiona la conexión y operaciones con MariaDB."""
+    """Gestiona la conexión y operaciones con MariaDB/TiDB."""
 
     def __init__(self, host=None, user=None, password=None, database=None):
         host = host or os.environ.get('DB_HOST', 'localhost')
         user = user or os.environ.get('DB_USER', 'gastos_user')
         password = password or os.environ.get('DB_PASSWORD', '')
         database = database or os.environ.get('DB_NAME', 'gastos_db')
+        port = int(os.environ.get('DB_PORT', '4000'))
+        use_ssl = os.environ.get('DB_SSL', 'true').lower() == 'true'
+
         self.config = {
             'host': host,
             'user': user,
             'password': password,
             'database': database,
+            'port': port,
             'charset': 'utf8mb4',
             'collation': 'utf8mb4_unicode_ci'
         }
+
+        # TiDB Cloud requiere conexión SSL
+        if use_ssl:
+            self.config['ssl_verify_cert'] = True
+            self.config['ssl_verify_identity'] = True
 
     def _get_connection(self):
         """Obtiene una conexión a la base de datos."""
