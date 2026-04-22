@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Registro de Gastos Personales - Controla tus finanzas con gráficas interactivas y reportes detallados.">
+    <title>💰 GastoTrack - Registro de Gastos Personales</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i data-lucide="wallet"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>GastoTrack</h1>
+                    <span>Control Financiero</span>
+                </div>
+            </div>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-view="dashboard" id="nav-dashboard">
+                <i data-lucide="layout-dashboard"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-view="transacciones" id="nav-transacciones">
+                <i data-lucide="arrow-left-right"></i>
+                <span>Transacciones</span>
+            </a>
+            <a href="#" class="nav-item" data-view="nueva" id="nav-nueva">
+                <i data-lucide="plus-circle"></i>
+                <span>Nueva Transacción</span>
+            </a>
+            <a href="#" class="nav-item" data-view="reportes" id="nav-reportes">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Reportes</span>
+            </a>
+        </nav>
+        
+        <div class="sidebar-footer">
+            <div class="sidebar-footer-info">
+                <i data-lucide="database"></i>
+                <span>MariaDB</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Toggle -->
+    <button class="mobile-toggle" id="mobile-toggle">
+        <i data-lucide="menu"></i>
+    </button>
+
+    <!-- Main Content -->
+    <main class="main-content" id="main-content">
+        
+        <!-- ========== DASHBOARD VIEW ========== -->
+        <section class="view active" id="view-dashboard">
+            <div class="view-header">
+                <div>
+                    <h2>Dashboard</h2>
+                    <p class="view-subtitle">Resumen de tus finanzas</p>
+                </div>
+                <div class="header-date" id="header-date"></div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card stat-balance">
+                    <div class="stat-icon">
+                        <i data-lucide="wallet"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Balance Total</span>
+                        <span class="stat-value" id="stat-balance">$0.00</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-ingresos">
+                    <div class="stat-icon">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Ingresos del Mes</span>
+                        <span class="stat-value" id="stat-ingresos">$0.00</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-gastos">
+                    <div class="stat-icon">
+                        <i data-lucide="trending-down"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Gastos del Mes</span>
+                        <span class="stat-value" id="stat-gastos">$0.00</span>
+                    </div>
+                </div>
+                <div class="stat-card stat-transacciones">
+                    <div class="stat-icon">
+                        <i data-lucide="receipt"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-label">Transacciones</span>
+                        <span class="stat-value" id="stat-transacciones">0</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Charts Row -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3><i data-lucide="pie-chart"></i> Gastos por Categoría</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-categorias"></canvas>
+                    </div>
+                    <div class="chart-legend" id="chart-categorias-legend"></div>
+                </div>
+                <div class="chart-card">
+                    <h3><i data-lucide="bar-chart-3"></i> Ingresos vs Gastos</h3>
+                    <div class="chart-container">
+                        <canvas id="chart-mensual"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Transactions -->
+            <div class="recent-card">
+                <h3><i data-lucide="clock"></i> Últimas Transacciones</h3>
+                <div class="transactions-list" id="recent-transactions"></div>
+            </div>
+        </section>
+
+        <!-- ========== TRANSACCIONES VIEW ========== -->
+        <section class="view" id="view-transacciones">
+            <div class="view-header">
+                <div>
+                    <h2>Transacciones</h2>
+                    <p class="view-subtitle">Historial completo</p>
+                </div>
+                <button class="btn btn-primary" id="btn-nueva-desde-lista" onclick="navigateTo('nueva')">
+                    <i data-lucide="plus"></i> Nueva
+                </button>
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters-bar" id="filters-bar">
+                <div class="filter-group">
+                    <label for="filter-tipo">Tipo</label>
+                    <select id="filter-tipo" class="filter-select">
+                        <option value="">Todos</option>
+                        <option value="ingreso">Ingresos</option>
+                        <option value="gasto">Gastos</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-categoria">Categoría</label>
+                    <select id="filter-categoria" class="filter-select">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filter-fecha-inicio">Desde</label>
+                    <input type="date" id="filter-fecha-inicio" class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="filter-fecha-fin">Hasta</label>
+                    <input type="date" id="filter-fecha-fin" class="filter-input">
+                </div>
+                <button class="btn btn-secondary" id="btn-filtrar" onclick="loadTransacciones()">
+                    <i data-lucide="search"></i> Filtrar
+                </button>
+                <button class="btn btn-ghost" id="btn-limpiar-filtros" onclick="limpiarFiltros()">
+                    <i data-lucide="x"></i> Limpiar
+                </button>
+            </div>
+            
+            <!-- Transactions Table -->
+            <div class="table-card">
+                <div class="table-responsive">
+                    <table class="data-table" id="tabla-transacciones">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Tipo</th>
+                                <th>Categoría</th>
+                                <th>Descripción</th>
+                                <th>Monto</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbody-transacciones">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="table-empty" id="table-empty" style="display:none;">
+                    <i data-lucide="inbox"></i>
+                    <p>No hay transacciones</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== NUEVA TRANSACCIÓN VIEW ========== -->
+        <section class="view" id="view-nueva">
+            <div class="view-header">
+                <div>
+                    <h2 id="form-title">Nueva Transacción</h2>
+                    <p class="view-subtitle" id="form-subtitle">Registra un ingreso o gasto</p>
+                </div>
+            </div>
+            
+            <div class="form-card">
+                <form id="form-transaccion" onsubmit="guardarTransaccion(event)">
+                    <input type="hidden" id="form-id" value="">
+                    
+                    <!-- Tipo selector -->
+                    <div class="tipo-selector">
+                        <label class="tipo-option tipo-ingreso" id="tipo-ingreso-label">
+                            <input type="radio" name="tipo" value="ingreso" id="tipo-ingreso">
+                            <div class="tipo-content">
+                                <i data-lucide="trending-up"></i>
+                                <span>Ingreso</span>
+                            </div>
+                        </label>
+                        <label class="tipo-option tipo-gasto" id="tipo-gasto-label">
+                            <input type="radio" name="tipo" value="gasto" id="tipo-gasto" checked>
+                            <div class="tipo-content">
+                                <i data-lucide="trending-down"></i>
+                                <span>Gasto</span>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="form-monto">Monto (MXN) *</label>
+                            <div class="input-icon">
+                                <i data-lucide="dollar-sign"></i>
+                                <input type="number" id="form-monto" step="0.01" min="0.01" required placeholder="0.00">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="form-fecha">Fecha *</label>
+                            <div class="input-icon">
+                                <i data-lucide="calendar"></i>
+                                <input type="date" id="form-fecha" required>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="form-categoria">Categoría *</label>
+                            <div class="input-icon">
+                                <i data-lucide="tag"></i>
+                                <select id="form-categoria" required>
+                                    <option value="">Selecciona una categoría</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group form-group-full">
+                            <label for="form-descripcion">Descripción</label>
+                            <div class="input-icon">
+                                <i data-lucide="file-text"></i>
+                                <input type="text" id="form-descripcion" placeholder="Ej: Despensa del supermercado" maxlength="255">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-ghost" onclick="resetForm()">
+                            <i data-lucide="x"></i> Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary" id="btn-guardar">
+                            <i data-lucide="save"></i> Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <!-- ========== REPORTES VIEW ========== -->
+        <section class="view" id="view-reportes">
+            <div class="view-header">
+                <div>
+                    <h2>Reportes</h2>
+                    <p class="view-subtitle">Análisis detallado por mes</p>
+                </div>
+            </div>
+            
+            <!-- Month Selector -->
+            <div class="report-selector">
+                <button class="btn btn-ghost" id="btn-mes-anterior" onclick="cambiarMesReporte(-1)">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <h3 id="report-mes-label">Abril 2026</h3>
+                <button class="btn btn-ghost" id="btn-mes-siguiente" onclick="cambiarMesReporte(1)">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+            
+            <!-- Report Stats -->
+            <div class="report-stats" id="report-stats">
+                <div class="report-stat-card report-ingresos">
+                    <span class="report-stat-label">Ingresos</span>
+                    <span class="report-stat-value" id="report-ingresos">$0.00</span>
+                </div>
+                <div class="report-stat-card report-gastos">
+                    <span class="report-stat-label">Gastos</span>
+                    <span class="report-stat-value" id="report-gastos">$0.00</span>
+                </div>
+                <div class="report-stat-card report-balance">
+                    <span class="report-stat-label">Balance</span>
+                    <span class="report-stat-value" id="report-balance">$0.00</span>
+                </div>
+                <div class="report-stat-card report-promedio">
+                    <span class="report-stat-label">Gasto Diario Prom.</span>
+                    <span class="report-stat-value" id="report-promedio">$0.00</span>
+                </div>
+            </div>
+            
+            <!-- Desglose por Categoría -->
+            <div class="report-breakdown-card">
+                <h3><i data-lucide="list"></i> Desglose por Categoría</h3>
+                <div class="breakdown-list" id="breakdown-list">
+                </div>
+                <div class="table-empty" id="report-empty" style="display:none;">
+                    <i data-lucide="inbox"></i>
+                    <p>Sin datos para este mes</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal de Confirmación -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal">
+            <div class="modal-icon">
+                <i data-lucide="alert-triangle"></i>
+            </div>
+            <h3>¿Eliminar transacción?</h3>
+            <p>Esta acción no se puede deshacer.</p>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-danger" id="btn-confirmar-eliminar">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
